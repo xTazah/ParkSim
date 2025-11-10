@@ -39,13 +39,13 @@ from parksim.spot_detector.detector import LocalDetector
 from parksim.utils.get_corners import get_vehicle_corners_from_dict
 
 from scipy.spatial import ConvexHull
+import yaml
 
 # These parameters should all become ROS param for simulator and vehicle
 spots_data_path = "/ParkSim/data/spots_data.pickle"
 offline_maneuver_path = "/ParkSim/data/parking_maneuvers.pickle"
 waypoints_graph_path = "/ParkSim/data/waypoints_graph.pickle"
 intent_model_path = "/ParkSim/data/smallRegularizedCNN_L0.068_01-29-2022_19-50-35.pth"
-traj_model_path = "/ParkSim/python/parksim/trajectory_predict/intent_transformer/checkpoints/TrajectoryPredictorWithDecoderIntentCrossAttention/lightning_logs/version_1/checkpoints/epoch=52-val_total_loss=0.0458.ckpt"
 
 
 class RuleBasedSimulator(object):
@@ -932,7 +932,7 @@ class RuleBasedSimulator(object):
                         velocities.append([s.t - st, s.v.v])
                     savemat(
                         str(Path.home())
-                        + "/ParkSim/vehicle_log/DJI_0023/simulated_vehicle_"
+                        + f"/ParkSim/vehicle_log/DJI_{self.params.dlp_number}/simulated_vehicle_"
                         + str(vehicle.vehicle_id)
                         + ".mat",
                         {"velocity": velocities},
@@ -1050,40 +1050,44 @@ class RuleBasedSimulator(object):
         fps_list_df.to_csv("fps_list.csv")
 
 
-"""
-Change these parameters to run tests using the neural network
-"""
-
-
 class RuleBasedSimulatorParams:
-    def __init__(self):
+    def __init__(self, sim_params: dict):
+        self.dlp_number = sim_params["dlp_number"]
+        self.spot_assignment_strategy = sim_params["spot_assignment_strategy"]
+
         self.seed = 0
 
         self.num_simulations = (
-            1  # number of simulations run (e.g. times started from scratch)
+            sim_params["num_simulations"]  # number of simulations run (e.g. times started from scratch)
         )
         self.current_sim_num = 0
 
         self.ev_simulation = False  # electric vehicle (Soomin's data) sim?
         self.intent_simulation = False
 
-        self.use_existing_agents = True  # replay video data
-        self.agents_data_path = "/ParkSim/data/agents_data_0023.pickle"
+        self.use_existing_agents = (
+            self.spot_assignment_strategy == "human_selection"
+            or sim_params["initialize_with_dlp_vehicles"]
+        )  # initialize vehicles as video data
+        self.agents_data_path = f"/ParkSim/data/agents_data_{self.dlp_number}.pickle"
 
         # should we replace where the agents park?
         self.use_existing_entrances = (
-            False  # have vehicles park in spots that they parked in real life
+            self.spot_assignment_strategy == "human_selection"  # have vehicles park in spots that they parked in real life
         )
 
         # don't use existing agents
-        self.spawn_entering_fn = lambda: 10
-        self.spawn_exiting_fn = lambda: 5
-        self.spawn_interval_mean_fn = lambda: 3  # (s)
+        self.spawn_entering_fn = lambda: sim_params["num_entering_vehicles"]
+        self.spawn_exiting_fn = lambda: sim_params["num_exiting_vehicles"]
+        self.spawn_interval_mean_fn = lambda: sim_params["mean_enter_time_s"]  # (s)
 
-        self.use_existing_obstacles = True  # able to park in "occupied" spots from dataset? False if yes, True if no
+        self.use_existing_obstacles = (
+            self.spot_assignment_strategy != "customized_solution" 
+            and sim_params["use_obstacles_from_dlp"]
+        )  # able to park in "occupied" spots from dataset? False if yes, True if no
 
-        self.load_existing_net = False  # generate a new net form scratch (and overwrite model.pickle) or use the one stored at self.spot_model_path
-        self.use_nn = False  # pick spots using NN or not (irrelevant if self.use_existing_entrances is True)
+        self.use_nn = (self.spot_assignment_strategy == "data_driven")  # pick spots using NN or not (irrelevant if self.use_existing_entrances is True)
+        self.load_existing_net = True  # generate a new net form scratch (and overwrite model.pickle) or use the one stored at self.spot_model_path
         self.train_nn = False  # train NN or not
         self.should_visualize = True  # display simulator or no
 
@@ -1235,25 +1239,30 @@ class RuleBasedSimulatorParams:
         else:
             # single spot
             # return self.current_sim_num
-            # random
-            return np.random.choice(empty_spots)
-            # closest spot
-            # return min(
-            #     [spot for spot in empty_spots],
-            #     key=lambda spot: np.linalg.norm(
-            #         [
-            #             simulator.entrance_coords[0]
-            #             - simulator.parking_spaces[spot][0],
-            #             simulator.entrance_coords[1]
-            #             - simulator.parking_spaces[spot][1],
-            #         ]
-            #     ),
-            # )
-            # hand-picked
-            # val = self.park_spots.pop(0)
-            # while val not in empty_spots:
-            #     val = self.park_spots.pop(0)
-            # return val
+            if self.spot_assignment_strategy == "random":
+                # random
+                return np.random.choice(empty_spots)
+            elif self.spot_assignment_strategy == "closest":
+                # closest spot
+                return min(
+                    [spot for spot in empty_spots],
+                    key=lambda spot: np.linalg.norm(
+                        [
+                            simulator.entrance_coords[0]
+                            - simulator.parking_spaces[spot][0],
+                            simulator.entrance_coords[1]
+                            - simulator.parking_spaces[spot][1],
+                        ]
+                    ),
+                )
+            elif self.spot_assignment_strategy == "customized_solution":
+                # hand-picked
+                val = self.park_spots.pop(0)
+                while val not in empty_spots:
+                    val = self.park_spots.pop(0)
+                return val
+            else:
+                raise ValueError(f"Unrecognized spot_assignment_strategy: {self.spot_assignment_strategy}")
 
     # target function for neural net
     def target(
@@ -1293,17 +1302,19 @@ class RuleBasedSimulatorParams:
     def save_net(self):
         torch.save(self.net, str(Path.home()) + self.spot_model_path)
 
-
 def main():
+    home_path = str(Path.home())
+    with open(home_path + '/ParkSim/python/parksim/simulator/sim_params.yaml', 'r') as file:
+        sim_params = yaml.safe_load(file)
+        
     # Load dataset
     ds = Dataset()
 
-    home_path = str(Path.home())
     print("Loading dataset...")
-    ds.load(home_path + "/dlp-dataset/data/DJI_0023")
+    ds.load(home_path + f"/dlp-dataset/data/DJI_{sim_params['dlp_number']}")
     print("Dataset loaded.")
 
-    params = RuleBasedSimulatorParams()
+    params = RuleBasedSimulatorParams(sim_params)
 
     vis = RealtimeVisualizer(ds, VehicleBody(), params.use_existing_obstacles)
 
