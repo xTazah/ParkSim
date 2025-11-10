@@ -16,20 +16,20 @@ from pathlib import Path
 ROOT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-
 class PredictionResponse:
     def __init__(self, all_spot_centers, distribution):
         self.all_spot_centers = all_spot_centers
         self.distribution = distribution
-
+        
     def get_spot_prediction(self):
         index_list = list(range(len(self.distribution)))
         chosen_index = np.random.choice(index_list, p=self.distribution)
 
         if chosen_index == len(self.all_spot_centers):
             return None
-        else:
+        else: 
             return self.all_spot_centers[chosen_index]
+        
 
 
 class Predictor:

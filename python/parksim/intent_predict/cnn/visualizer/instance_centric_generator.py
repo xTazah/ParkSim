@@ -104,7 +104,10 @@ class InstanceCentricGenerator:
 
     def _get_corners(self, center, dims, angle):
         length, width = dims
-        offsets = np.array([[0.5, -0.5], [0.5, 0.5], [-0.5, 0.5], [-0.5, -0.5]])
+        offsets = np.array([[ 0.5, -0.5],
+                            [ 0.5,  0.5],
+                            [-0.5,  0.5],
+                            [-0.5, -0.5]])
         offsets_scaled = offsets @ np.array([[length, 0], [0, width]])
 
         adj_angle = np.pi - angle
