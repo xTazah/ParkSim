@@ -1,0 +1,24 @@
+# ========== The DLP scene used for the simulation =============
+# This is always necesary since we need to at least load map and obstacles from it
+dlp_number: "0012"
+# Whether we want to use the obstacles from the DLP dataset
+use_obstacles_from_dlp: true
+
+# ========== Whether to initialize the entering and exiting vehicles the same as DLP
+initialize_with_dlp_vehicles: true
+
+# ========== Spawning entering and exiting vehicles ==========
+# These will not have impact if we choose to initialize_with_dlp_vehicles = true
+num_entering_vehicles: 10
+num_exiting_vehicles: 5
+mean_enter_time_s: 3
+
+# ========== Spot assignment strategy =============
+spot_assignment_strategy: "human_selection"
+# spot_assignment_strategy: "customized_solution"
+# spot_assignment_strategy: "random"
+# spot_assignment_strategy: "closest"
+# spot_assignment_strategy: "data_driven"
+
+num_simulations: 1
+

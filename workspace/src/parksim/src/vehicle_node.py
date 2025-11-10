@@ -11,6 +11,7 @@ from rclpy.handle import InvalidHandle
 from pathlib import Path
 import os
 import numpy as np
+from scipy.io import savemat
 import pickle
 from std_msgs.msg import Int16MultiArray, Bool
 from parksim.msg import VehicleStateMsg, VehicleInfoMsg
@@ -18,7 +19,7 @@ from parksim.srv import OccupancySrv
 from parksim.pytypes import VehicleState, NodeParamTemplate
 from parksim.vehicle_types import VehicleBody, VehicleConfig, VehicleInfo, VehicleTask
 from parksim.base_node import MPClabNode
-from parksim.agents.rule_based_stanley_vehicle import RuleBasedStanleyVehicle
+from parksim.agents.rule_based_vehicle import RuleBasedVehicle
 
 class VehicleNodeParams(NodeParamTemplate):
     """
@@ -100,7 +101,7 @@ class VehicleNode(MPClabNode):
         controller = StanleyController(control_params=controller_params, vehicle_body=vehicle_body, vehicle_config=vehicle_config)
         motion_predictor = StanleyController(control_params=controller_params, vehicle_body=vehicle_body, vehicle_config=vehicle_config)
 
-        self.vehicle = RuleBasedStanleyVehicle(
+        self.vehicle = RuleBasedVehicle(
             vehicle_id=self.vehicle_id, 
             vehicle_body=vehicle_body, 
             vehicle_config=vehicle_config, 
@@ -290,6 +291,13 @@ class VehicleNode(MPClabNode):
             with open(log_dir_path + "/vehicle_%d.log" % self.vehicle_id, 'a') as f:
                 f.writelines(str(self.total_non_idle_time))
                 self.vehicle.logger.clear()
+
+            # write velocity data
+            velocities = []
+            st = self.vehicle.state_hist[0].t
+            for s in self.vehicle.state_hist:
+                velocities.append([s.t - st, s.v.v])
+            savemat(str(Path.home()) + "/ParkSim/vehicle_log/DJI_0030/simulated_vehicle_" + str(self.vehicle_id) + ".mat", {"velocity": velocities})
 
             self.destroy_node()
 

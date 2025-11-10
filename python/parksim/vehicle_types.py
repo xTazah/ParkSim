@@ -92,8 +92,10 @@ class VehicleConfig(PythonMsg):
     # Vehicle Limits
     v_max: float = field(default=5)  # maximum velocity
     v_min: float = field(default=-5)  # minimum velocity
-    a_max: float = field(default=2)  # maximum acceleration
-    a_min: float = field(default=-2)  # minimum acceleration
+    a_max: float = field(default=10)  # maximum acceleration
+    a_min: float = field(default=-10)  # minimum acceleration
+    a_max_parking: float = field(default=2)  # maximum acceleration for parking
+    a_min_parking: float = field(default=-2)  # minimum acceleration for parking
     delta_max: float = field(default=np.deg2rad(40.0))  # maximum steering angle
     delta_min: float = field(default=-np.deg2rad(40.0))  # minimum steering angle
     d_delta_max: float = field(default=1.5)  # maximum change in steering angle over dt
@@ -106,10 +108,11 @@ class VehicleConfig(PythonMsg):
 
     # Decision Making Related
     offset: float = field(default=1.75) # distance off from waypoints
+    parking_start_offset: float = field(default=1.75) # distance off from waypoints to start parking maneuver
     look_ahead_timesteps: int = field(default=10) # how far to look ahead for crash detection
     crash_check_radius: float = field(default=15) # which vehicles to check crash
     braking_distance: float = field(default=10)
-    parking_radius: float = field(default=7) # how much room a vehicle should have to park
+    parking_radius: float = field(default=9) # how much room a vehicle should have to park
     parking_ahead_angle: float = field(default=np.pi/4)
     leading_trailing_thres: float = field(default=0.25) # Threshold of heading angle difference to check whether two vehicles are leading and trailing. 0.25 is about about 15 degrees
 
@@ -137,3 +140,4 @@ class VehicleTask(PythonMsg):
     target_spot_index: int = field(default=None)
     target_coords: np.ndarray = field(default=None)
     duration: float = field(default=None)
+    end_time: float = field(default=None)

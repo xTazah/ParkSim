@@ -46,6 +46,7 @@ class StanleyController(object):
 
         self.L = vehicle_body.wb
 
+        self.max_a = vehicle_config.a_max
         self.max_steer = vehicle_config.delta_max
 
         self.x_ref = []
@@ -152,6 +153,7 @@ class StanleyController(object):
         state.u.u_steer = delta
 
         # don't turn too much
+        acceleration = np.clip(acceleration, -self.max_a, self.max_a)
         delta = np.clip(delta, -self.max_steer, self.max_steer)
 
         # advance x and y
@@ -162,3 +164,6 @@ class StanleyController(object):
         state.e.psi = normalize_angle(state.e.psi)
         # advance velocity
         state.v.v += acceleration * self.dt
+
+    def get_ref_length(self):
+        return np.sum([np.linalg.norm([self.y_ref[i + 1] - self.y_ref[i], self.x_ref[i + 1] - self.x_ref[i]]) for i in range(len(self.x_ref) - 1)])

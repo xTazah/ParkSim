@@ -6,7 +6,7 @@ from parksim.pytypes import VehiclePrediction
 
 random.seed(0)
 
-class OfflineManeuver(object):
+class OffsetOfflineManeuver(object):
     """
     Library of offline maneuver
     """
@@ -15,28 +15,33 @@ class OfflineManeuver(object):
             self.lib = pickle.load(handle)
 
     def get_maneuver(self, xy_offset=[0,0], 
+                        offset=0.0,
                         driving_dir=random.choice(['east', 'west']), 
                         x_position=random.choice(['left', 'right']),
                         spot=random.choice(['north', 'south']),
-                        heading=random.choice(['up', 'down'])) -> VehiclePrediction:
+                        heading=None) -> VehiclePrediction:
         # print('Trajectory requested:', (driving_dir, x_position, spot, heading))
         
-        traj = self.lib[(driving_dir, x_position, spot, heading)]
+        if heading is None:
+            if (offset, driving_dir, x_position, spot, 'up') in self.lib:
+                traj = self.lib[(offset, driving_dir, x_position, spot, 'up')]
+            else:
+                traj = self.lib[(offset, driving_dir, x_position, spot, 'down')]
 
         res = VehiclePrediction()
-        res.t = traj[0, :]
-        res.x = traj[1, :] + xy_offset[0]
-        res.y = traj[2, :] + xy_offset[1]
-        res.psi = traj[3, :]
-        res.v = traj[4, :]
+        res.t = traj[:, 0]
+        res.x = traj[:, 1] + xy_offset[0]
+        res.y = traj[:, 2] + xy_offset[1]
+        res.psi = traj[:, 3]
+        res.v = traj[:, 4]
 
-        res.u_a = traj[5, :]
-        res.u_steer = traj[6, :]
+        # res.u_a = traj[5, :]
+        # res.u_steer = traj[6, :]
 
         return res
 
 def main():
-    offline_maneuver = OfflineManeuver(pickle_file='parking_maneuvers.pickle')
+    offline_maneuver = OffsetOfflineManeuver(pickle_file='offset_parking_maneuvers.pickle')
     state, input = offline_maneuver.get_maneuver()
 
     plt.figure()
