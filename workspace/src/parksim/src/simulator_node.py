@@ -16,6 +16,7 @@ from dlp.dataset import Dataset
 from dlp.visualizer import Visualizer as DlpVisualizer
 
 from std_msgs.msg import Int16MultiArray, Bool, Float32
+import parksim
 from parksim.msg import VehicleStateMsg
 from parksim.srv import OccupancySrv
 from parksim.base_node import MPClabNode
@@ -69,7 +70,7 @@ class SimulatorNode(MPClabNode):
 
         # Clean up the log folder if needed
         if self.write_log:
-            log_dir_path = str(Path.home()) + self.log_path
+            log_dir_path = str(Path(parksim.__file__).resolve().parents[3]) + self.log_path
 
             if not os.path.exists(log_dir_path):
                 os.mkdir(log_dir_path)
@@ -79,7 +80,7 @@ class SimulatorNode(MPClabNode):
             self.get_logger().info("Logs will be saved in %s. Old logs are cleared." % log_dir_path)
 
         # DLP
-        home_path = str(Path.home())
+        home_path = str(Path(parksim.__file__).resolve().parents[3])
         self.get_logger().info('Loading Dataset...')
         ds = Dataset()
         ds.load(home_path + self.dlp_path)
@@ -158,7 +159,7 @@ class SimulatorNode(MPClabNode):
         return parking_spaces, list(map(int, occupied))
 
     def _gen_agents(self):
-        home_path = str(Path.home())
+        home_path = str(Path(parksim.__file__).resolve().parents[3])
         with open(home_path + self.agents_data_path, 'rb') as f:
             self.agents_dict = pickle.load(f)
 

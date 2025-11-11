@@ -7,12 +7,13 @@ from parksim.path_planner.offline_maneuver import OfflineManeuver
 
 from pathlib import Path
 
+import parksim
 from parksim.pytypes import VehiclePrediction, VehicleState
 from tqdm import tqdm
 
 offline_maneuver_path = "/ParkSim/data/parking_maneuvers.pickle"
 
-offline_maneuver = OfflineManeuver(str(Path.home()) + offline_maneuver_path)
+offline_maneuver = OfflineManeuver(str(Path(parksim.__file__).resolve().parents[3]) + offline_maneuver_path)
 
 path = offline_maneuver.get_maneuver(
     driving_dir="east", x_position="left", spot="north", heading="up"

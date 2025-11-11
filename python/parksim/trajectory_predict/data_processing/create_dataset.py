@@ -3,6 +3,7 @@ import multiprocessing
 import numpy as np
 import os
 
+import dlp
 from dlp.dataset import Dataset
 from math import cos, sin
 from parksim.trajectory_predict.data_processing.utils import TransformerDataProcessor
@@ -120,7 +121,7 @@ def create_dataset(path, name, tail_size):
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--stride', default=10, help='stride size. e.g. 10 means get one data per 10 timesteps', type=int)
-    parser.add_argument('-p', '--path', default=f"{Path.home()}/dlp-dataset/data/", help='absolute path to JSON files, e.g. ~/dlp-dataset/data/', type=str)
+    parser.add_argument('-p', '--path', default=f"{Path(dlp.__file__).resolve().parents[2]}/dlp-dataset/data/", help='absolute path to JSON files, e.g. ~/dlp-dataset/data/', type=str)
     parser.add_argument('-b', '--before', default=10, help='number of previous observations to store in motion history for input', type=int)
     parser.add_argument('-f', '--future', default=10, help='number of future observations to store as trajectory output', type=int)
     parser.add_argument('-i', '--img_size', default=100,

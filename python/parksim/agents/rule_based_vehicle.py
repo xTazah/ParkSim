@@ -6,6 +6,7 @@ import time
 import array
 from collections import deque
 
+import parksim
 from parksim.agents.abstract_agent import AbstractAgent
 from parksim.controller.stanley_controller import StanleyController
 from parksim.controller.mpc_controller import MPC
@@ -221,7 +222,7 @@ class RuleBasedVehicle(AbstractAgent):
                 self.ev_charging_state = 2
 
     def load_parking_spaces(self, spots_data_path: str):
-        home_path = str(Path.home())
+        home_path = str(Path(parksim.__file__).resolve().parents[3])
         with open(home_path + spots_data_path, "rb") as f:
             data = pickle.load(f)
             self.parking_spaces = data["parking_spaces"]
@@ -234,7 +235,7 @@ class RuleBasedVehicle(AbstractAgent):
         waypoints_graph_path: path to WaypointGraph object pickle
         entrance_coords: The (x,y) coordinates of the entrance
         """
-        home_path = str(Path.home())
+        home_path = str(Path(parksim.__file__).resolve().parents[3])
         with open(home_path + waypoints_graph_path, "rb") as f:
             data = pickle.load(f)
             self.graph = data["graph"]
@@ -244,7 +245,7 @@ class RuleBasedVehicle(AbstractAgent):
         self.entrance_vertex = self.graph.search(entrance_coords)
 
     def load_maneuver(self, offline_maneuver_path: str):
-        home_path = str(Path.home())
+        home_path = str(Path(parksim.__file__).resolve().parents[3])
         self.offline_maneuver = OfflineManeuver(
             pickle_file=home_path + offline_maneuver_path
         )
@@ -253,7 +254,7 @@ class RuleBasedVehicle(AbstractAgent):
         """
         load_graph must be called before load_intent_model.
         """
-        home_path = str(Path.home())
+        home_path = str(Path(parksim.__file__).resolve().parents[3])
         self.intent_predictor.load_model(
             waypoints=self.graph, model_path=home_path + model_path
         )

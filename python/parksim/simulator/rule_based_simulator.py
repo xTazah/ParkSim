@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import torch
 from scipy.io import savemat
+import parksim
 from parksim.pytypes import VehicleState
 
 from parksim.vehicle_types import VehicleBody, VehicleConfig, VehicleTask
@@ -148,14 +149,14 @@ class RuleBasedSimulator(object):
         self.graph.setup_with_vis(self.dlpvis)
 
         # Save data to offline files
-        # with open(str(Path.home()) + '/parksim/data/waypoints_graph.pickle', 'wb') as f:
+        # with open(str(Path(parksim.__file__).resolve().parents[3]) + '/parksim/data/waypoints_graph.pickle', 'wb') as f:
         #     data_to_save = {'graph': self.graph,
         #                     'entrance_coords': self.entrance_coords}
         #     pickle.dump(data_to_save, f)
 
         # Clean up the log folder if needed
         if self.write_log:
-            log_dir_path = str(Path.home()) + self.log_path
+            log_dir_path = str(Path(parksim.__file__).resolve().parents[3]) + self.log_path
 
             if not os.path.exists(log_dir_path):
                 os.mkdir(log_dir_path)
@@ -402,7 +403,7 @@ class RuleBasedSimulator(object):
         return None if len(decider) == 0 else decider[0]
 
     def _gen_agents(self):
-        home_path = str(Path.home())
+        home_path = str(Path(parksim.__file__).resolve().parents[3])
         with open(home_path + self.agents_data_path, "rb") as f:
             self.agents_dict = pickle.load(f)
 
@@ -814,14 +815,14 @@ class RuleBasedSimulator(object):
         # dat["trajectory_squares"] = self.discretization
         # dat["trajectory_length"] = self.traj_len
         # dat["last_waypoint"] = self.last_pt
-        # with open(str(Path.home()) + "/parksim/python/parksim/spot_nn/create_features_data.pickle", 'wb') as file:
+        # with open(str(Path(parksim.__file__).resolve().parents[3]) + "/parksim/python/parksim/spot_nn/create_features_data.pickle", 'wb') as file:
         #     pickle.dump(dat, file)
         #     print("done")
         #     file.close()
 
         if self.write_log:
             # write logs
-            log_dir_path = str(Path.home()) + self.log_path
+            log_dir_path = str(Path(parksim.__file__).resolve().parents[3]) + self.log_path
             if not os.path.exists(log_dir_path):
                 os.mkdir(log_dir_path)
 
@@ -931,7 +932,7 @@ class RuleBasedSimulator(object):
                     for s in vehicle.state_hist:
                         velocities.append([s.t - st, s.v.v])
                     savemat(
-                        str(Path.home())
+                        str(Path(parksim.__file__).resolve().parents[3])
                         + f"/ParkSim/vehicle_log/DJI_{self.params.dlp_number}/simulated_vehicle_"
                         + str(vehicle.vehicle_id)
                         + ".mat",
@@ -979,7 +980,7 @@ class RuleBasedSimulator(object):
 
                 elif self.write_log and len(vehicle.logger) > 0:
                     # write logs
-                    log_dir_path = str(Path.home()) + self.log_path
+                    log_dir_path = str(Path(parksim.__file__).resolve().parents[3]) + self.log_path
                     if not os.path.exists(log_dir_path):
                         os.mkdir(log_dir_path)
 
@@ -1102,7 +1103,7 @@ class RuleBasedSimulatorParams:
         if self.use_nn or self.train_nn:
             # load net
             if self.load_existing_net:
-                self.net = torch.load(str(Path.home()) + self.spot_model_path)
+                self.net = torch.load(str(Path(parksim.__file__).resolve().parents[3]) + self.spot_model_path)
             else:
                 self.net = SpotNet()
 
@@ -1112,7 +1113,7 @@ class RuleBasedSimulatorParams:
     def run_simulations(self, ds, vis):
         if self.use_nn or self.train_nn:
             if (
-                os.path.isfile(str(Path.home()) + self.spot_model_path)
+                os.path.isfile(str(Path(parksim.__file__).resolve().parents[3]) + self.spot_model_path)
                 and not self.load_existing_net
             ):
                 print(
@@ -1203,13 +1204,13 @@ class RuleBasedSimulatorParams:
                 print("Bad simulation")
 
         if self.use_nn or self.train_nn:
-            with open(str(Path.home()) + self.losses_csv_path, "w", newline="") as file:
+            with open(str(Path(parksim.__file__).resolve().parents[3]) + self.losses_csv_path, "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(["Simulation", "Loss", "Average Entering Time"])
                 for i in range(len(losses)):
                     writer.writerow([i, losses[i], average_times[i]])
         else:
-            with open(str(Path.home()) + self.losses_csv_path, "w", newline="") as file:
+            with open(str(Path(parksim.__file__).resolve().parents[3]) + self.losses_csv_path, "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(["Simulation", "Loss", "Average Entering Time"])
                 for i in range(len(average_times)):
@@ -1300,10 +1301,10 @@ class RuleBasedSimulatorParams:
 
     # save NN parameters to disk
     def save_net(self):
-        torch.save(self.net, str(Path.home()) + self.spot_model_path)
+        torch.save(self.net, str(Path(parksim.__file__).resolve().parents[3]) + self.spot_model_path)
 
 def main():
-    home_path = str(Path.home())
+    home_path = str(Path(parksim.__file__).resolve().parents[3])
     with open(home_path + '/ParkSim/python/parksim/simulator/sim_params.yaml', 'r') as file:
         sim_params = yaml.safe_load(file)
         

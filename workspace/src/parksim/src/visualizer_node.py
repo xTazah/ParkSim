@@ -8,6 +8,7 @@ import re
 
 from pathlib import Path
 
+import dlp
 from dlp.dataset import Dataset
 
 from std_msgs.msg import Bool, Float32
@@ -59,7 +60,7 @@ class VisualizerNode(MPClabNode):
 
         # Load dataset
         ds = Dataset()
-        home_path = str(Path.home())
+        home_path = str(Path(dlp.__file__).resolve().parents[2])
         ds.load(home_path + self.dlp_path)
 
         # Load Vehicle Body

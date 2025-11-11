@@ -1,6 +1,7 @@
 from parksim.intent_predict.cnn.models.small_regularized_cnn import SmallRegularizedCNN
 import time
 from parksim.intent_predict.cnn.models import Predictor
+import dlp
 from dlp.dataset import Dataset
 from parksim.intent_predict.cnn.data_processing.utils import CNNDataProcessor
 from pathlib import Path
@@ -13,7 +14,7 @@ model = SmallRegularizedCNN().eval()
 # Load dataset
 ds = Dataset()
 
-home_path = str(Path.home() / 'Documents/Github' / 'dlp-dataset/data/DJI_0012')
+home_path = str(Path(dlp.__file__).resolve().parents[2] / 'dlp-dataset/data/DJI_0012')
 ds.load(home_path)
 scene = ds.get('scene', ds.list_scenes()[0])
 frame_index = 20

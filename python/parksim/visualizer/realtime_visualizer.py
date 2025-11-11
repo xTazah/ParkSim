@@ -2,6 +2,7 @@ import time
 import numpy as np
 import dearpygui.dearpygui as dpg
 
+import dlp
 from dlp.dataset import Dataset
 from dlp.visualizer import Visualizer as DlpVis
 from parksim.pytypes import VehicleState
@@ -318,7 +319,7 @@ if __name__ == "__main__":
     # Load dataset
     ds = Dataset()
 
-    home_path = str(Path.home())
+    home_path = str(Path(dlp.__file__).resolve().parents[2])
     ds.load(home_path + "/dlp-dataset/data/DJI_0012")
 
     vehicle_body = VehicleBody()

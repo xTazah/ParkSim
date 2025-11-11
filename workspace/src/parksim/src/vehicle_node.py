@@ -14,6 +14,7 @@ import numpy as np
 from scipy.io import savemat
 import pickle
 from std_msgs.msg import Int16MultiArray, Bool
+import parksim
 from parksim.msg import VehicleStateMsg, VehicleInfoMsg
 from parksim.srv import OccupancySrv
 from parksim.pytypes import VehicleState, NodeParamTemplate
@@ -89,7 +90,7 @@ class VehicleNode(MPClabNode):
         vehicle_body = VehicleBody()
 
         if self.use_existing_agents:
-            agents = pickle.load(open(str(Path.home()) + self.agents_data_path, "rb"))
+            agents = pickle.load(open(str(Path(parksim.__file__).resolve().parents[3]) + self.agents_data_path, "rb"))
             agent_dict = agents[self.vehicle_id]
 
             vehicle_body.w = agent_dict["width"]
@@ -284,7 +285,7 @@ class VehicleNode(MPClabNode):
             self.get_logger().info("Vehicle %d is done. Destroying node." % self.vehicle_id)
 
             # write logs
-            log_dir_path = str(Path.home()) + self.log_path
+            log_dir_path = str(Path(parksim.__file__).resolve().parents[3]) + self.log_path
             if not os.path.exists(log_dir_path):
                 os.mkdir(log_dir_path)
             
@@ -297,7 +298,7 @@ class VehicleNode(MPClabNode):
             st = self.vehicle.state_hist[0].t
             for s in self.vehicle.state_hist:
                 velocities.append([s.t - st, s.v.v])
-            savemat(str(Path.home()) + "/ParkSim/vehicle_log/DJI_0030/simulated_vehicle_" + str(self.vehicle_id) + ".mat", {"velocity": velocities})
+            savemat(str(Path(parksim.__file__).resolve().parents[3]) + "/ParkSim/vehicle_log/DJI_0030/simulated_vehicle_" + str(self.vehicle_id) + ".mat", {"velocity": velocities})
 
             self.destroy_node()
 
@@ -316,7 +317,7 @@ class VehicleNode(MPClabNode):
                 self.vehicle.solve(time=self.get_ros_time())
         elif self.write_log and len(self.vehicle.logger) > 0:
             # write logs
-            log_dir_path = str(Path.home()) + self.log_path
+            log_dir_path = str(Path(parksim.__file__).resolve().parents[3]) + self.log_path
             if not os.path.exists(log_dir_path):
                 os.mkdir(log_dir_path)
             

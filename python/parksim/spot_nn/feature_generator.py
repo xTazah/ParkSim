@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
+import parksim
 from parksim.pytypes import VehicleState
 from parksim.agents.rule_based_vehicle import RuleBasedVehicle
 
@@ -11,12 +12,12 @@ from parksim.agents.rule_based_vehicle import RuleBasedVehicle
 class SpotFeatureGenerator:
     def __init__(self):
         with open(
-            str(Path.home())
+            str(Path(parksim.__file__).resolve().parents[3])
             + "/ParkSim/python/parksim/spot_nn/create_features_data.pickle",
             "rb",
         ) as file:
             self.create_features_data = pickle.load(file)
-        with open(str(Path.home()) + "/ParkSim/data/spots_data.pickle", "rb") as f:
+        with open(str(Path(parksim.__file__).resolve().parents[3]) + "/ParkSim/data/spots_data.pickle", "rb") as f:
             data = pickle.load(f)
             self.parking_spaces = data["parking_spaces"]
 

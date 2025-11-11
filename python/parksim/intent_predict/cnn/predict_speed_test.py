@@ -1,5 +1,6 @@
 from turtle import home
 from parksim.intent_predict.cnn.predictor import Predictor
+import dlp
 from dlp.dataset import Dataset
 from parksim.intent_predict.cnn.data_processing.utils import CNNDataProcessor
 import time
@@ -8,7 +9,7 @@ from pathlib import Path
 # Load dataset
 ds = Dataset()
 
-home_path = str(Path.home() / 'Documents/Github' / 'dlp-dataset/data/DJI_0012')
+home_path = str(Path(dlp.__file__).resolve().parents[2] / 'Documents/Github' / 'dlp-dataset/data/DJI_0012')
 ds.load(home_path)
 scene = ds.get('scene', ds.list_scenes()[0])
 frame_index = 80

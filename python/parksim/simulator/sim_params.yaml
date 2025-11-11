@@ -1,6 +1,6 @@
 # ========== The DLP scene used for the simulation =============
 # This is always necesary since we need to at least load map and obstacles from it
-dlp_number: "0012"
+dlp_number: "0015"
 # Whether we want to use the obstacles from the DLP dataset
 use_obstacles_from_dlp: true
 

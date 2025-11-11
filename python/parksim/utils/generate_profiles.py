@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
+import parksim
 from pathlib import Path
 
 PARKED_DEADBAND = (
@@ -13,7 +14,7 @@ IDLE_MIN_TIME = (
     15  # number of seconds car must be at 0 velocity before it's considered idle
 )
 
-home_path = str(Path.home())
+home_path = str(Path(parksim.__file__).resolve().parents[3])
 
 dji_number = "0025"
 
