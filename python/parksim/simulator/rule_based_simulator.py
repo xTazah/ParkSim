@@ -1094,7 +1094,7 @@ class RuleBasedSimulatorParams:
 
         # before changing model, don't forget to set: spot selection, loss function
         self.spot_model_path = (
-            "/ParkSim/python/parksim/spot_nn/final_pd_models/selfish_model.pickle"
+            "/ParkSim/data/selfish_model.pickle"
         )
         self.losses_csv_path = (
             "/ParkSim/python/parksim/spot_nn/losses.csv"  # where losses are stored
