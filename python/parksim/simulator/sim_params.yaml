@@ -21,4 +21,5 @@ spot_assignment_strategy: "human_selection"
 # spot_assignment_strategy: "data_driven"
 
 num_simulations: 1
+max_simulation_time: 700
 

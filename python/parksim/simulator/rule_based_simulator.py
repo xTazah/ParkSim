@@ -47,6 +47,7 @@ spots_data_path = "/ParkSim/data/spots_data.pickle"
 offline_maneuver_path = "/ParkSim/data/parking_maneuvers.pickle"
 waypoints_graph_path = "/ParkSim/data/waypoints_graph.pickle"
 intent_model_path = "/ParkSim/data/smallRegularizedCNN_L0.068_01-29-2022_19-50-35.pth"
+spot_model_path = "/ParkSim/data/selfish_model.pickle"
 
 
 class RuleBasedSimulator(object):
@@ -202,7 +203,7 @@ class RuleBasedSimulator(object):
         self.num_vehicles = 0
         self.vehicles: List[RuleBasedVehicle] = []
 
-        self.max_simulation_time = 500
+        self.max_simulation_time = self.params.max_simulation_time
 
         self.time = 0.0
         self.loops = 0
@@ -1061,6 +1062,9 @@ class RuleBasedSimulatorParams:
         self.num_simulations = (
             sim_params["num_simulations"]  # number of simulations run (e.g. times started from scratch)
         )
+        self.max_simulation_time = sim_params[
+            "max_simulation_time"
+        ]  # maximum time for each simulation
         self.current_sim_num = 0
 
         self.ev_simulation = False  # electric vehicle (Soomin's data) sim?
@@ -1093,9 +1097,7 @@ class RuleBasedSimulatorParams:
         self.should_visualize = True  # display simulator or no
 
         # before changing model, don't forget to set: spot selection, loss function
-        self.spot_model_path = (
-            "/ParkSim/data/selfish_model.pickle"
-        )
+        self.spot_model_path = spot_model_path  # where the spot selection NN is stored
         self.losses_csv_path = (
             "/ParkSim/python/parksim/spot_nn/losses.csv"  # where losses are stored
         )
