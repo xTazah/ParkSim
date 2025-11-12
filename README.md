@@ -85,6 +85,7 @@ BASE
 2. Enter the `ParkSim/python` folder
 3. Run `pip install -e .` to install `parksim` package
 4. With the current virtualenv activated, go into the `dlp-dataset` folder and run `pip install -e .` to install the `dlp` package into the same env
+5. Install `pip install` the correct [pytorch](https://pytorch.org/) version into this virtualenv based on your OS and hardware.
 
 ### Test
 1. With the virtualenv activated, run `python python/parksim/simulator/rule_based_simulator.py` to run the simulation
