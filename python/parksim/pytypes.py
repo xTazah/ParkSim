@@ -28,7 +28,7 @@ class PythonMsg:
         object.__setattr__(instance, key, value)
         ONLY when absolutely necessary.
         '''
-        if not hasattr(self, key):
+        if not hasattr(self, key) and key not in getattr(self, '__dataclass_fields__', {}):
             raise TypeError('Cannot add new field "%s" to frozen class %s' % (key, self))
         else:
             object.__setattr__(self, key, value)

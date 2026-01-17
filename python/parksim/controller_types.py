@@ -25,8 +25,8 @@ class MPCParams(PythonMsg):
     N: int = field(default=10)
     dt: float = field(default=0.1)
 
-    Q: np.ndarray = field(default=np.array([1, 1, 0, 0]))
-    R: np.ndarray = field(default=np.array([0, 0]))
+    Q: np.ndarray = field(default_factory=lambda: np.array([1, 1, 0, 0]))
+    R: np.ndarray = field(default_factory=lambda: np.array([0, 0]))
 
     obs_buffer_size: int = field(default=6)
 
