@@ -123,10 +123,12 @@ class RuleBasedVehicle(AbstractAgent):
         self.parking_step = (
             0 if not self.intent_vehicle else -1
         )  # parking handled slightly differently for intent vehicle
+        self.parking_step_float = float(self.parking_step)
 
         # unparking stuff
         self.unparking_maneuver = None
         self.unparking_step = -1
+        self.unparking_step_float = -1.0
         self.unparking_x_ref = None
         self.unparking_y_ref = None
         self.unparking_yaw_ref = None
@@ -140,6 +142,13 @@ class RuleBasedVehicle(AbstractAgent):
         self.waiting_for_unparker = (
             False  # need special handling for waiting for unparker
         )
+
+        self.waiting_for_timestamp: int = 0 #timestamp we started waiting for vehicle
+        self.honked_at_by: int = None # are we being honked at? (try hurrying up)
+        self.honking_at: int = None # are we honking at another vehicle?
+        self.honk_after: float = self.vehicle_config.honk_after # how long to wait before honking
+        
+        self.parking_virtual_time: float = 0.0
 
         # ev charging
         self.charging_spots = [39, 40, 41]  # TODO: put this in a yaml
@@ -166,6 +175,7 @@ class RuleBasedVehicle(AbstractAgent):
         self.other_is_braking: Dict[int, str] = {}
         self.other_waiting_for: Dict[int, int] = {}
         self.other_is_all_done: Dict[int, bool] = {}
+        self.other_honked_at_by: Dict[int, int] = {}
 
         # ============== Method to exchange information
         self.method_to_change_central_occupancy = None
@@ -526,6 +536,7 @@ class RuleBasedVehicle(AbstractAgent):
 
         self.info.disp_text = self.disp_text
         self.info.is_all_done = self.is_all_done()
+        self.info.honking_at = self.honking_at
 
         return self.info
 
@@ -567,6 +578,12 @@ class RuleBasedVehicle(AbstractAgent):
             self.other_parking_start_time[id] = v.parking_start_time
             self.other_waiting_for[id] = v.waiting_for
             self.other_is_all_done[id] = v.is_all_done()
+
+            # is vehicle honking at us?
+            if v.honking_at == self.vehicle_id:
+                self.honked_at_by = id
+            elif self.honked_at_by == id: # stopped honking at us
+                self.honked_at_by = None
 
     def dist_from(self, other_id: int):
         """
@@ -823,14 +840,24 @@ class RuleBasedVehicle(AbstractAgent):
             self.change_central_occupancy(self.spot_index, True)
 
         step = self.parking_step
-        # set state
-        self.state.x.x = self.parking_maneuver.x[step]
-        self.state.x.y = self.parking_maneuver.y[step]
-        self.state.e.psi = self.parking_maneuver.psi[step]
-        self.state.v.v = self.parking_maneuver.v[step]
+        
+        # increase speed if honked at
+        speed_factor = 1.0
+        if self.honked_at_by is not None:
+            speed_factor = self.vehicle_config.honked_at_speed_factor
 
-        self.state.u.u_a = self.parking_maneuver.u_a[step]
-        self.state.u.u_steer = self.parking_maneuver.u_steer[step]
+        # Clamp step to prevent IndexError if we overshot
+        max_idx = len(self.parking_maneuver.x) - 1
+        safe_step = min(step, max_idx)
+
+        # set state
+        self.state.x.x = self.parking_maneuver.x[safe_step]
+        self.state.x.y = self.parking_maneuver.y[safe_step]
+        self.state.e.psi = self.parking_maneuver.psi[safe_step]
+        self.state.v.v = self.parking_maneuver.v[safe_step] * speed_factor
+
+        self.state.u.u_a = self.parking_maneuver.u_a[safe_step]
+        self.state.u.u_steer = self.parking_maneuver.u_steer[safe_step]
 
         if self.parking_step >= len(self.parking_maneuver.x) - 1:
             # done parking
@@ -839,7 +866,9 @@ class RuleBasedVehicle(AbstractAgent):
             self.execute_next_task()
         else:
             # update parking step if advancing
-            self.parking_step += 1 if advance else 0
+            if advance:
+                self.parking_step_float += speed_factor
+                self.parking_step = int(self.parking_step_float)
 
     def solve_unparking_control_teleport(self, time, advance=True):
         if self.unparking_maneuver is None:  # start unparking
@@ -889,29 +918,40 @@ class RuleBasedVehicle(AbstractAgent):
 
             # set initial unparking state
             self.unparking_step = len(self.unparking_maneuver.x) - 1
+            self.unparking_step_float = float(self.unparking_step)
 
             self.set_parking_start_time(time)
 
         # get step
         step = self.unparking_step
 
+        # increase speed if honked at
+        speed_factor = 1.0
+        if self.honked_at_by is not None:
+             speed_factor = self.vehicle_config.honked_at_speed_factor
+
+        # clamp step to prevent IndexError if we overshot (negative)
+        safe_step = max(0, step)
+
         # set state
-        self.state.x.x = self.unparking_maneuver.x[step]
-        self.state.x.y = self.unparking_maneuver.y[step]
-        self.state.e.psi = self.unparking_maneuver.psi[step]
-        self.state.v.v = self.unparking_maneuver.v[step]
+        self.state.x.x = self.unparking_maneuver.x[safe_step]
+        self.state.x.y = self.unparking_maneuver.y[safe_step]
+        self.state.e.psi = self.unparking_maneuver.psi[safe_step]
+        self.state.v.v = self.unparking_maneuver.v[safe_step] * speed_factor
 
-        self.state.u.u_a = self.unparking_maneuver.u_a[step]
-        self.state.u.u_steer = self.unparking_maneuver.u_steer[step]
+        self.state.u.u_a = self.unparking_maneuver.u_a[safe_step]
+        self.state.u.u_steer = self.unparking_maneuver.u_steer[safe_step]
 
-        if self.unparking_step == 0:  # done unparking
+        if self.unparking_step <= 0:  # done unparking
             self.change_central_occupancy(self.spot_index, False)
 
             self.reset_parking_related()
             self.execute_next_task()
         else:
             # update parking step if advancing
-            self.unparking_step -= 1 if advance else 0
+            if advance:
+                self.unparking_step_float -= speed_factor
+                self.unparking_step = int(self.unparking_step_float)
 
     def reset_parking_related(self):
         # inf means haven't start parking or unparking. Anything above 0 is parking
@@ -919,10 +959,12 @@ class RuleBasedVehicle(AbstractAgent):
 
         self.parking_maneuver = None
         self.parking_step = 0
+        self.parking_step_float = 0.0
 
         # unparking stuff
         self.unparking_maneuver = None
         self.unparking_step = -1
+        self.unparking_step_float = -1.0
 
         self.park_start_coords = None
 
@@ -931,6 +973,7 @@ class RuleBasedVehicle(AbstractAgent):
         Sets self.parking_start_time, with a tiebreaker so two vehicles can't have the same time
         """
         self.parking_start_time = time + self.vehicle_id * 0.0000001
+        self.parking_virtual_time = 0.0
 
     def get_corners(self, state: VehicleState = None, vehicle_body: VehicleBody = None):
         """
@@ -951,6 +994,7 @@ class RuleBasedVehicle(AbstractAgent):
         self._pre_brake_target_speed = self.v_ref
         self.v_ref = 0
         self.is_braking = True
+        self.waiting_for_timestamp = self.state.t
         if self.waiting_for != 0:
             self.last_braking_distance = self.dist_from(self.waiting_for)
 
@@ -963,6 +1007,7 @@ class RuleBasedVehicle(AbstractAgent):
             self.is_braking = False
             self.priority = 0
             self.waiting_for = 0
+            self.waiting_for_timestamp = 0
 
     def is_parking(self):
         """
@@ -1133,6 +1178,8 @@ class RuleBasedVehicle(AbstractAgent):
             self.solve_unparking_control_teleport(time, should_go)
         else:
             self.update_state()
+            
+        self.update_display_text()
 
         self.state.t = time
         self.state_hist.append(self.state.copy())
@@ -1143,12 +1190,18 @@ class RuleBasedVehicle(AbstractAgent):
     def standard_driving_control(self, coord_spot_fn):
         # braking controller
         if not self.is_braking:
+            # if we are honking, stop honking since we can drive again
+            if self.honking_at is not None:
+                self.stop_honk()
+
             # normal speed controller if not braking
             if (
                 self.target_idx
                 < self.num_waypoints() - self.vehicle_config.steps_to_end
             ):
-                self.set_ref_v(self.vehicle_config.v_cruise)
+                #increase speed if honked at by someone
+                speed = self.vehicle_config.v_cruise if self.honked_at_by is None else self.vehicle_config.v_cruise * self.vehicle_config.honked_at_speed_factor
+                self.set_ref_v(speed)
             else:
                 self.set_ref_v(self.vehicle_config.v_end)
 
@@ -1197,6 +1250,11 @@ class RuleBasedVehicle(AbstractAgent):
                         self.brake()
 
         else:  # waiting / braking
+            # check if we should honk
+            if self.waiting_for != 0 and (self.state.t > self.waiting_for_timestamp + self.honk_after):
+                if self.honking_at != self.waiting_for:
+                    self.start_honk(self.waiting_for)
+            
             # parking
             if self.waiting_for != 0 and self.other_task[self.waiting_for] == "PARK":
                 if self.waiting_for not in self.nearby_vehicles:
@@ -1273,6 +1331,22 @@ class RuleBasedVehicle(AbstractAgent):
     def get_other_vehicles(self):
         other_states = {i: self.other_state[i] for i in self.other_state}
         return other_states
+
+    def update_display_text(self):
+        if self.honking_at is not None:
+            self.disp_text = str(self.vehicle_id) + " HONK! Move Vehicle " + str(self.honking_at)
+        elif self.honked_at_by is not None:
+            self.disp_text = str(self.vehicle_id) + " SORRY!"
+        else:
+            self.disp_text = str(self.vehicle_id)
+
+    def start_honk(self, other_id):
+        self.other_honked_at_by[other_id] = self.vehicle_id
+        self.honking_at = other_id
+
+    def stop_honk(self):
+        self.other_honked_at_by[self.honking_at] = None
+        self.honking_at = None
 
     ##### INTENT PREDICTION #####
 
@@ -1476,10 +1550,17 @@ class RuleBasedVehicle(AbstractAgent):
         if self.parking_start_time == float("inf"):
             self.set_parking_start_time(time)
 
-        parking_time = time - self.parking_start_time
+        # increase speed if honked at
+        speed_factor = 1.0
+        if self.honked_at_by is not None:
+            speed_factor = self.vehicle_config.honked_at_speed_factor
+        
+        # advance virtual time
+        self.parking_virtual_time += self.mpc.dt * speed_factor
+
         look_ahead_horizon = np.linspace(
-            parking_time,
-            parking_time + self.mpc.N * self.mpc.dt,
+            self.parking_virtual_time,
+            self.parking_virtual_time + self.mpc.N * self.mpc.dt,
             num=self.mpc.N,
             endpoint=False,
         )

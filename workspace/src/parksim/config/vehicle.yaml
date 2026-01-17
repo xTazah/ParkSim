@@ -2,6 +2,9 @@
   ros__parameters:
     timer_period: 0.1
 
+    honk_after: 1
+    honked_at_speed_factor: 1.25
+
     warm_start_time: 0.3
 
     entrance_coords: [14.38, 76.21]
