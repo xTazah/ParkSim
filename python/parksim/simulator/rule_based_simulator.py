@@ -1039,7 +1039,10 @@ class RuleBasedSimulator(object):
                             for x, y in zip(preds.x, preds.y):
                                 self.vis.draw_circle((x, y), 3, col)
 
-                    on_vehicle_text = str(vehicle.vehicle_id)
+                    if vehicle.is_all_done():
+                        on_vehicle_text = str(vehicle.vehicle_id)
+                    else:
+                        on_vehicle_text = vehicle.disp_text
                     self.vis.draw_text(
                         [vehicle.state.x.x - 2, vehicle.state.x.y + 2],
                         on_vehicle_text,

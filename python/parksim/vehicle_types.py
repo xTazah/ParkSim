@@ -111,6 +111,8 @@ class VehicleConfig(PythonMsg):
     parking_start_offset: float = field(default=1.75) # distance off from waypoints to start parking maneuver
     look_ahead_timesteps: int = field(default=10) # how far to look ahead for crash detection
     crash_check_radius: float = field(default=15) # which vehicles to check crash
+    honk_after: float = field(default = 1.0) # how long to wait before honking
+    honked_at_speed_factor: float = field(default = 1.25) # how much faster to move if honked at
     braking_distance: float = field(default=10)
     parking_radius: float = field(default=9) # how much room a vehicle should have to park
     parking_ahead_angle: float = field(default=np.pi/4)
@@ -129,6 +131,7 @@ class VehicleInfo(PythonMsg):
     waiting_for: int = field(default=None)
     disp_text: str = field(default=None)
     is_all_done: bool = field(default=None)
+    honking_at: int = field(default=None)
 
     def __post_init__(self):
         self.ref_pose = VehiclePrediction()
